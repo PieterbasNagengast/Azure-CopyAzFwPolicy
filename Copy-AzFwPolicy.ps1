@@ -53,16 +53,29 @@ if (-not ($TargetAzFwPolicyID.Split("/")[2] -eq $SourceAzFwPolicyID.Split("/")[2
 }
 
 # get the source and target firewall policies
+Write-Verbose "Getting Azure Firewall Policy: $($SourceAzFwPolicyID)"
 $SourceAzFwPolicy = Get-AzFirewallPolicy -ResourceId $SourceAzFwPolicyID -ErrorAction SilentlyContinue
 
 if ($null -eq $SourceAzFwPolicy) {
     Write-Error "Failed to get Azure Firewall Source Policy: $($SourceAzFwPolicyID)."
 }
 
+Write-Verbose "Getting Azure Firewall Policy: $($TargetAzFwPolicyID)"
 $TargetAzFwPolicy = Get-AzFirewallPolicy -ResourceId $TargetAzFwPolicyID -ErrorAction SilentlyContinue
 
 if ($null -eq $TargetAzFwPolicy) {
     Write-Error "Failed to get Azure Firewall Target Policy: $($TargetAzFwPolicyID)."
+}
+
+Write-Verbose "Source Azure Firewall Policy SKU: $($SourceAzFwPolicy.Sku.Tier)"
+Write-Verbose "Target Azure Firewall Policy SKU: $($TargetAzFwPolicy.Sku.Tier)"
+
+# check if both source and target firewall policies have the same sku
+if ($SourceAzFwPolicy.Sku.Tier -ne $TargetAzFwPolicy.Sku.Tier) {
+    Write-Error "The Source and Target Azure Firewall Policies must have the same SKU."
+}
+else {
+    Write-Host "Source and Target Azure Firewall Policies have the same SKU: $($SourceAzFwPolicy.Sku.Tier)" -ForegroundColor Green
 }
 
 # input object for set-azfirewallpolicy
@@ -81,6 +94,8 @@ $TargetAzFwPolicy = @{
     Snat                 = $SourceAzFwPolicy.Snat
     Tag                  = if ($IncludeTags) { $SourceAzFwPolicy.Tag } else { $null }
 }
+
+Write-Verbose ($TargetAzFwPolicy | ConvertTo-Json -Depth 100)
 
 Write-Host "Getting Rule Collection Groups..."
 # for each rule collection group in the source firewall policy
