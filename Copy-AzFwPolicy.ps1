@@ -56,13 +56,13 @@ if (-not ($TargetAzFwPolicyID.Split("/")[2] -eq $SourceAzFwPolicyID.Split("/")[2
 $SourceAzFwPolicy = Get-AzFirewallPolicy -ResourceId $SourceAzFwPolicyID -ErrorAction SilentlyContinue
 
 if ($null -eq $SourceAzFwPolicy) {
-    Write-Error "Failed to get the SourceAzFwPolicyID."
+    Write-Error "Failed to get Azure Firewall Source Policy: $($SourceAzFwPolicyID)."
 }
 
 $TargetAzFwPolicy = Get-AzFirewallPolicy -ResourceId $TargetAzFwPolicyID -ErrorAction SilentlyContinue
 
 if ($null -eq $TargetAzFwPolicy) {
-    Write-Error "Failed to get the TargetAzFwPolicyID."
+    Write-Error "Failed to get Azure Firewall Target Policy: $($TargetAzFwPolicyID)."
 }
 
 # input object for set-azfirewallpolicy
