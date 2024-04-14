@@ -2,13 +2,14 @@
 
 # enable command line binding
 [CmdletBinding()]
-# commandline parameters make them mandatory
+# commandline parameters make them mandatory, including includeTags toggle
 param (
     [Parameter(Mandatory = $true)]
     [string]$SourceAzFwPolicyID,
     [Parameter(Mandatory = $true)]
-    [string]$TargetAzFwPolicyID
+    [string]$TargetAzFwPolicyID,
 )
+    
 
 # get the source and target firewall policies
 $SourceAzFwPolicy = Get-AzFirewallPolicy -ResourceId $SourceAzFwPolicyID
@@ -28,7 +29,6 @@ $TargetAzFwPolicy = @{
     Sqlsetting           = $SourceAzFwPolicy.sqlsetting
     BasePolicy           = $SourceAzFwPolicy.BasePolicy
     Snat                 = $SourceAzFwPolicy.Snat
-    Tag                  = $SourceAzFwPolicy.Tag
 }
 
 # for each rule collection group in the source firewall policy
