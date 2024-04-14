@@ -45,6 +45,10 @@ if ($TargetAzFwPolicyID -eq $SourceAzFwPolicyID) {
     throw "The SourceAzFwPolicyID and TargetAzFwPolicyID parameters must be different."
 }
 
+if (-not ($TargetAzFwPolicyID.Split("/")[2] -eq $SourceAzFwPolicyID.Split("/")[2])) {
+    throw "The SourceAzFwPolicyID and TargetAzFwPolicyID parameters must be in the same subscription."
+}
+
 # get the source and target firewall policies
 $SourceAzFwPolicy = Get-AzFirewallPolicy -ResourceId $SourceAzFwPolicyID -ErrorAction Stop
 $TargetAzFwPolicy = Get-AzFirewallPolicy -ResourceId $TargetAzFwPolicyID -ErrorAction Stop
@@ -66,15 +70,32 @@ $TargetAzFwPolicy = @{
     Tag                  = if ($IncludeTags) { $SourceAzFwPolicy.Tag } else { $null }
 }
 
+Write-Host "Getting Rule Collection Groups..."
 # for each rule collection group in the source firewall policy
 foreach ($SourceAzFwPolicyRuleCollectionGroup in $SourceAzFwPolicy.RuleCollectionGroups) {
     # get the source firewall policy rule collection group
     $RuleCollectionGroup = Get-AzFirewallPolicyRuleCollectionGroup -AzureFirewallPolicyName $SourceAzFwPolicy.Name -ResourceGroupName $SourceAzFwPolicy.ResourceGroupName -Name ($SourceAzFwPolicyRuleCollectionGroup.id).Split("/")[-1]
 
+    Write-Host "Copying Rule Collection Group: $($RuleCollectionGroup.Name)..."
     # set the target firewall policy rule collection group
-    New-AzFirewallPolicyRuleCollectionGroup -Name $RuleCollectionGroup.Name -ResourceGroupName $TargetAzFwPolicy.ResourceGroupName -FirewallPolicyName $TargetAzFwPolicy.Name -Priority $RuleCollectionGroup.Properties.Priority -RuleCollection $RuleCollectionGroup.Properties.RuleCollection
+    $newRuleCollectionGroup = New-AzFirewallPolicyRuleCollectionGroup -Name $RuleCollectionGroup.Name -ResourceGroupName $TargetAzFwPolicy.ResourceGroupName -FirewallPolicyName $TargetAzFwPolicy.Name -Priority $RuleCollectionGroup.Properties.Priority -RuleCollection $RuleCollectionGroup.Properties.RuleCollection
     
+    if ($newRuleCollectionGroup) {
+        Write-Host "Rule Collection Group $($RuleCollectionGroup.Name) copied successfully." -ForegroundColor Green
+    }
+    else {
+        Write-Host "Failed to copy Rule Collection Group $($RuleCollectionGroup.Name)." -ForegroundColor Red
+    }
+
 }
 
+Write-Host "Copying Azure Firewall Policy $($SourceAzFwPolicy.Name) to $($TargetAzFwPolicy.Name)..."
 # set the target firewall policy
-Set-AzFirewallPolicy -InputObject $TargetAzFwPolicy
+$setPolicy = Set-AzFirewallPolicy -InputObject $TargetAzFwPolicy
+
+if ($setPolicy) {
+    Write-Host "Azure Firewall Policy $($SourceAzFwPolicy.Name) copied successfully." -ForegroundColor Green
+}
+else {
+    Write-Host "Failed to copy Azure Firewall Policy $($SourceAzFwPolicy.Name)." -ForegroundColor Red
+}
