@@ -40,18 +40,30 @@ param (
     [switch]$IncludeTags
 )
 
+# set default error action preference
+$ErrorActionPreference = "Stop"
+
 # validate the source and target firewall policy IDs are different
 if ($TargetAzFwPolicyID -eq $SourceAzFwPolicyID) {
-    throw "The SourceAzFwPolicyID and TargetAzFwPolicyID parameters must be different."
+    Write-Error "The SourceAzFwPolicyID and TargetAzFwPolicyID parameters must be different."
 }
 
 if (-not ($TargetAzFwPolicyID.Split("/")[2] -eq $SourceAzFwPolicyID.Split("/")[2])) {
-    throw "The SourceAzFwPolicyID and TargetAzFwPolicyID parameters must be in the same subscription."
+    Write-Error "The SourceAzFwPolicyID and TargetAzFwPolicyID parameters must be in the same subscription."
 }
 
 # get the source and target firewall policies
-$SourceAzFwPolicy = Get-AzFirewallPolicy -ResourceId $SourceAzFwPolicyID -ErrorAction Stop
-$TargetAzFwPolicy = Get-AzFirewallPolicy -ResourceId $TargetAzFwPolicyID -ErrorAction Stop
+$SourceAzFwPolicy = Get-AzFirewallPolicy -ResourceId $SourceAzFwPolicyID -ErrorAction SilentlyContinue
+
+if ($null -eq $SourceAzFwPolicy) {
+    Write-Error "Failed to get the SourceAzFwPolicyID."
+}
+
+$TargetAzFwPolicy = Get-AzFirewallPolicy -ResourceId $TargetAzFwPolicyID -ErrorAction SilentlyContinue
+
+if ($null -eq $TargetAzFwPolicy) {
+    Write-Error "Failed to get the TargetAzFwPolicyID."
+}
 
 # input object for set-azfirewallpolicy
 $TargetAzFwPolicy = @{
@@ -84,7 +96,7 @@ foreach ($SourceAzFwPolicyRuleCollectionGroup in $SourceAzFwPolicy.RuleCollectio
         Write-Host "Rule Collection Group $($RuleCollectionGroup.Name) copied successfully." -ForegroundColor Green
     }
     else {
-        Write-Host "Failed to copy Rule Collection Group $($RuleCollectionGroup.Name)." -ForegroundColor Red
+        Write-Error "Failed to copy Rule Collection Group $($RuleCollectionGroup.Name)."
     }
 
 }
@@ -97,5 +109,5 @@ if ($setPolicy) {
     Write-Host "Azure Firewall Policy $($SourceAzFwPolicy.Name) copied successfully." -ForegroundColor Green
 }
 else {
-    Write-Host "Failed to copy Azure Firewall Policy $($SourceAzFwPolicy.Name)." -ForegroundColor Red
+    Write-Error "Failed to copy Azure Firewall Policy $($SourceAzFwPolicy.Name)."
 }
