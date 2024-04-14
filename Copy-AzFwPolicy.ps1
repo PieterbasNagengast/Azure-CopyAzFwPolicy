@@ -7,7 +7,7 @@ param (
     [Parameter(Mandatory = $true)]
     [string]$SourceAzFwPolicyID,
     [Parameter(Mandatory = $true)]
-    [string]$TargetAzFwPolicyID,
+    [string]$TargetAzFwPolicyID
 )
     
 
